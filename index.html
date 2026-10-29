@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Google Etkinlik Analiz Merkezi</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#202124;background:#f6f8fc}
+body{max-width:1050px;margin:0 auto;padding:20px}header,.card{background:white;border:1px solid #e0e3eb;border-radius:16px;padding:20px;margin:14px 0}
+h1{margin:0 0 8px;font-size:clamp(1.5rem,4vw,2.2rem)}.muted{color:#5f6368}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+button,.button{border:0;border-radius:10px;padding:12px 16px;background:#1a73e8;color:white;font-weight:650;cursor:pointer;text-decoration:none;display:inline-block}
+.secondary{background:#e8f0fe;color:#174ea6}input{max-width:100%;padding:10px}table{width:100%;border-collapse:collapse;display:block;overflow-x:auto}td,th{text-align:left;border-bottom:1px solid #eee;padding:10px;vertical-align:top;min-width:120px}
+.flash{padding:12px;border-radius:8px;background:#e8f0fe;margin:8px 0}.error{background:#fce8e6}.warning{background:#fff4ce;padding:12px;border-radius:8px}
+</style></head><body>
+<header><h1>Google Etkinlik Analiz Merkezi</h1><p class="muted">İzinli veriler için yerel analiz ve raporlama</p>
+{% if user %}<p>Oturum: <strong>{{ user.name or user.email }}</strong> ({{ user.email }})</p>
+<form action="{{ url_for('logout') }}" method="post"><button class="secondary">Google oturumunu kapat</button></form>
+{% else %}<p class="muted">Google oturumu: bağlı değil</p>
+{% if oauth_ready %}<a class="button" href="{{ url_for('login') }}">Google ile giriş yap</a>
+{% else %}<p class="warning">OAuth henüz yapılandırılmadı. Örnek analiz ve dosya yükleme yine kullanılabilir.</p>{% endif %}{% endif %}</header>
+{% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="flash {% if category == 'error' %}error{% endif %}">{{ message }}</div>{% endfor %}{% endwith %}
+<div class="warning"><strong>Gizlilik:</strong> Google giriş bilgilerini bu uygulamaya yazma. OAuth yalnızca temel profil kimliğini doğrular. Etkinlik geçmişini analiz etmek için yalnızca seçtiğin Takeout JSON/CSV dosyasını yükle. Dosya kalıcı olarak kaydedilmez.</div>
+<section class="card"><h2>1. Veri kaynağını seç</h2><div class="grid">
+<form action="{{ url_for('analyze_demo') }}" method="post"><h3>Örnek veriler</h3><p class="muted">Uygulamayı gerçek verin olmadan dene.</p><button>Örnek veriyle analiz başlat</button></form>
+<form action="{{ url_for('analyze_upload') }}" method="post" enctype="multipart/form-data"><h3>Kendi verin</h3><p class="muted">Google Takeout'tan dışa aktardığın JSON veya CSV dosyası.</p><input type="file" name="datafile" accept=".json,.csv" required><p><button>Seçilen dosyayı analiz et</button></p></form>
+</div></section>
+{% if result %}<section class="card"><h2>2. Analiz raporu</h2><p>Kaynak: <strong>{{ result.source }}</strong></p>
+<div class="grid"><div class="card"><span class="muted">Toplam kayıt</span><h2>{{ result.total }}</h2></div>
+<div class="card"><span class="muted">Kategori sayısı</span><h2>{{ result.category_counts|length }}</h2></div>
+<div class="card"><span class="muted">Tarih grubu sayısı</span><h2>{{ result.date_counts|length }}</h2></div></div>
+<h3>Kategori dağılımı</h3><ul>{% for category, count in result.category_counts %}<li>{{ category }} — {{ count }}</li>{% else %}<li>Kayıt bulunamadı.</li>{% endfor %}</ul>
+<h3>Tarihe göre kayıtlar</h3><ul>{% for date, count in result.date_counts %}<li>{{ date }} — {{ count }}</li>{% endfor %}</ul>
+<p><a class="button" href="{{ url_for('download_html') }}">HTML raporunu indir</a> <a class="button secondary" href="{{ url_for('download_csv') }}">CSV kayıtlarını indir</a></p>
+<h3>Kayıt ayrıntıları</h3><table><thead><tr><th>Zaman</th><th>Kategori</th><th>Başlık</th><th>Ayrıntı</th></tr></thead><tbody>
+{% for r in result.records %}<tr><td>{{ r.timestamp }}</td><td>{{ r.category }}</td><td>{{ r.title }}</td><td>{{ r.details }}</td></tr>{% endfor %}
+</tbody></table><h3>Sınırlamalar</h3><ul>{% for item in result.limitations %}<li>{{ item }}</li>{% endfor %}</ul></section>{% endif %}
+<footer class="muted"><small>İlk sürüm · Yerel kullanım için tasarlandı · Hassas raporları paylaşmadan önce gözden geçir.</small></footer>
+</body></html>
